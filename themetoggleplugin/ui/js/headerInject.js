@@ -296,40 +296,14 @@
 
   loadTheme(getTheme());
 
-  function tryInject() {
-    if (document.getElementById('themetoggleplugin-toggle-btn')) return true;
+  function createToggleElement() {
     var isDark = getTheme() === 'dark';
     var iconClass = isDark ? 'fa fa-sun-o fa-lg' : 'fa fa-moon-o fa-lg';
-
-    /* Prefer jQuery and exact Object Browser pattern: ul.navbar-right li:first, insert before it */
-    if (typeof jQuery !== 'undefined') {
-      var $ul = jQuery('ul.navbar-right');
-      if (!$ul.length) $ul = jQuery('#menuMainDiv ul.navbar-right');
-      if ($ul.length) {
-        var $first = $ul.find('li:first');
-        var $li = jQuery(
-          '<li role="presentation" class="themetoggleplugin-nav-item">' +
-          '<a href="#" role="menuitem" class="menuitem themetoggleplugin-toggle-btn" id="themetoggleplugin-toggle-btn" tabindex="0" title="Toggle light/dark theme">' +
-          '<span class="themetoggle-track"><span class="themetoggle-thumb"><i role="presentation" class="' + iconClass + '"></i></span></span></a></li>'
-        );
-        $first.before($li);
-        $li.find('a').on('click', function (e) {
-          e.preventDefault();
-          var next = getTheme() === 'dark' ? 'light' : 'dark';
-          loadTheme(next);
-          $li.find('i').attr('class', next === 'dark' ? 'fa fa-sun-o fa-lg' : 'fa fa-moon-o fa-lg');
-        });
-        return true;
-      }
-    }
-
-    /* Vanilla fallback: same selectors as menu.xhtml */
-    var ul = document.querySelector('ul.navbar-right') || document.querySelector('#menuMainDiv ul.navbar-right');
-    if (!ul) return false;
 
     var li = document.createElement('li');
     li.setAttribute('role', 'presentation');
     li.className = 'themetoggleplugin-nav-item';
+
     var a = document.createElement('a');
     a.setAttribute('href', '#');
     a.setAttribute('role', 'menuitem');
@@ -337,6 +311,7 @@
     a.setAttribute('title', 'Toggle light/dark theme');
     a.className = 'menuitem themetoggleplugin-toggle-btn';
     a.id = 'themetoggleplugin-toggle-btn';
+
     var track = document.createElement('span');
     track.className = 'themetoggle-track';
     var thumb = document.createElement('span');
@@ -344,17 +319,28 @@
     var i = document.createElement('i');
     i.setAttribute('role', 'presentation');
     i.className = iconClass;
+
     thumb.appendChild(i);
     track.appendChild(thumb);
     a.appendChild(track);
+
     a.addEventListener('click', function (e) {
       e.preventDefault();
       var next = getTheme() === 'dark' ? 'light' : 'dark';
       loadTheme(next);
       i.className = next === 'dark' ? 'fa fa-sun-o fa-lg' : 'fa fa-moon-o fa-lg';
     });
-    li.appendChild(a);
 
+    li.appendChild(a);
+    return li;
+  }
+
+  function tryInject() {
+    if (document.getElementById('themetoggleplugin-toggle-btn')) return true;
+    var ul = document.querySelector('ul.navbar-right') || document.querySelector('#menuMainDiv ul.navbar-right');
+    if (!ul) return false;
+
+    var li = createToggleElement();
     var first = ul.querySelector('li');
     if (first) {
       ul.insertBefore(li, first);
@@ -368,33 +354,10 @@
     if (tryInject()) return;
     /* Fallback: fixed wrap only if nav never appears (e.g. minimal layout) */
     if (document.getElementById('themetoggleplugin-toggle-btn')) return;
-    var isDark = getTheme() === 'dark';
-    var iconClass = isDark ? 'fa fa-sun-o fa-lg' : 'fa fa-moon-o fa-lg';
+
     var wrap = document.createElement('div');
     wrap.className = 'themetoggleplugin-fixed-wrap';
-    var li = document.createElement('li');
-    var a = document.createElement('a');
-    a.href = '#';
-    a.className = 'menuitem themetoggleplugin-toggle-btn';
-    a.id = 'themetoggleplugin-toggle-btn';
-    a.title = 'Toggle light/dark theme';
-    var track = document.createElement('span');
-    track.className = 'themetoggle-track';
-    var thumb = document.createElement('span');
-    thumb.className = 'themetoggle-thumb';
-    var i = document.createElement('i');
-    i.className = iconClass;
-    thumb.appendChild(i);
-    track.appendChild(thumb);
-    a.appendChild(track);
-    a.addEventListener('click', function (e) {
-      e.preventDefault();
-      var next = getTheme() === 'dark' ? 'light' : 'dark';
-      loadTheme(next);
-      i.className = next === 'dark' ? 'fa fa-sun-o fa-lg' : 'fa fa-moon-o fa-lg';
-    });
-    li.appendChild(a);
-    wrap.appendChild(li);
+    wrap.appendChild(createToggleElement());
     document.body.appendChild(wrap);
   }
 
@@ -433,5 +396,19 @@
     window.addEventListener('load', function () {
       if (!document.getElementById('themetoggleplugin-toggle-btn')) tryInject();
     });
+  }
+
+  /* Expose helpers in Node / CommonJS test environments */
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      getTheme: getTheme,
+      setTheme: setTheme,
+      loadTheme: loadTheme,
+      applyBodyClass: applyBodyClass,
+      isProtected: isProtected,
+      isWhiteOrLightBg: isWhiteOrLightBg,
+      createToggleElement: createToggleElement,
+      tryInject: tryInject
+    };
   }
 })();
